@@ -1,0 +1,1 @@
+create a project to hide your secrets using a GUI

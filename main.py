@@ -1,12 +1,13 @@
-from tkinter import Tk, Entry, Label, Text, END, Button, Toplevel, DISABLED
-from encryptions import create_key, encrypt_data
+from tkinter import Tk, Entry, Label, Text, END, Button, Toplevel, DISABLED, NORMAL
+from encryptions import create_key, encrypt_data, decrypt_data
 import base64
 import webbrowser
 
 BLACK = "black"
 ORANGE_1 = "#c43b00"
-DARK_GREEN_1 = "#004011"
+DARK_GREEN_1 = "#000801"
 DARK_GREEN_2 = "#0d5718"
+DARK_GREEN_3 = "#041206"
 LIGHT_GREEN_1 = "#00ff5e"
 RED_1 = "#cc001f"
 BLUE_1 = "#003f52"
@@ -113,11 +114,12 @@ class EncryptUI():
         self.encrypt_logs.insert(END, f"key: {base64.urlsafe_b64decode(self.key)}\n")
         self.encrypt_logs.insert(END, f"salt: {base64.urlsafe_b64decode(self.salt_round).decode()}\n")
         self.process_salt_rounds()
+        self.__input_text.config(state=NORMAL, bg=DARK_GREEN_3)
         return
     
     def save_encrypted_data(self):
-        pass
-
+        pass   
+         
     def encrypt_win(self):
         self.main_window.destroy()
         self.encrypt_window = Tk()
@@ -168,7 +170,10 @@ class EncryptUI():
         lbl_output.grid(row=1, column=4, rowspan=3)
         btn_save.grid(row=3, column=4)
         logs.grid(row=3, column=0, columnspan=4)
+
         txt_input.bind("<<Modified>>", self.input_on_change)
+        txt_input.config(state=DISABLED)
+        logs.insert(END, "submit your password first")
         self.__seed_entry = entry_seed
         self.encrypt_logs = logs
         self.__input_text = txt_input

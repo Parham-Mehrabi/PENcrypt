@@ -32,5 +32,5 @@ def encrypt_data(key:bytes, raw_data:str) -> bytes:
 def decrypt_data(key:bytes, encrypted_data:str) -> bytes:
     """ decrypt data with given key """
     cipher_suite = Fernet(key)
-    decrypted_data = cipher_suite.encrypt(data=encrypted_data.encode())
+    decrypted_data = cipher_suite.decrypt(encrypted_data.encode())
     return decrypted_data

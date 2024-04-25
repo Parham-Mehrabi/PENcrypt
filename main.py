@@ -2,6 +2,8 @@ from tkinter import Tk, Entry, Label, Text, END, Button, Toplevel, DISABLED, NOR
 from encryptions import create_key, encrypt_data, decrypt_data
 import base64
 import webbrowser
+import pickle
+import os
 
 BLACK = "black"
 ORANGE_1 = "#c43b00"
@@ -44,8 +46,13 @@ def pop_up(root):
     pop_up_message.insert(END, message)
     win.columnconfigure(0, weight=1)
     pop_up_message.config(state=DISABLED)
-    pop_up_message.grid(column=0, row=1, sticky="n")
-    
+    pop_up_message.grid(column=0, row=1, sticky="n")  
+
+def unique_pickle_path(path):
+    index = 0
+    while os.path.exists(f"{path}-{index}.pickle"):
+        index += 1
+    return f"{path}-{index}.pickle"
 
 class CoolLabel(Label):
     def __init__(self, master=None, **kwargs):
@@ -97,7 +104,7 @@ class EncryptUI():
         if self.key:
             self.encrypted_data = encrypt_data(key=self.key, raw_data=self.__input_text.get("1.0", "end-1c"))
             self.__output.delete("1.0", "end-1c")
-            self.__output.insert(END, self.encrypted_data.decode())
+            self.__output.insert(END, self.encrypted_data)
             self.__output.insert(END, self.salt_round)
         self.__input_text.edit_modified(False)
     
@@ -106,11 +113,15 @@ class EncryptUI():
         self.salt, self.round = (base64.b64decode(self.salt_round)).decode().split(":")
 
     def process_seed(self):
+        self.__output.delete("1.0", "end-1c")
         if not self.__get_seed:
+            self.encrypt_logs.config(foreground=RED_1)
             self.encrypt_logs.delete("1.0", "end-1c")
             self.encrypt_logs.insert(END, "empty seed\n")
             return
         self.key, self.salt_round = create_key(password=self.__get_seed)
+        self.encrypt_logs.delete("1.0", "end-1c")
+        self.encrypt_logs.config(foreground=LIGHT_GREEN_1)
         self.encrypt_logs.insert(END, f"key: {base64.urlsafe_b64decode(self.key)}\n")
         self.encrypt_logs.insert(END, f"salt: {base64.urlsafe_b64decode(self.salt_round).decode()}\n")
         self.process_salt_rounds()
@@ -118,8 +129,24 @@ class EncryptUI():
         return
     
     def save_encrypted_data(self):
-        pass   
-         
+        if not self.encrypted_data:
+            self.encrypt_logs.config(foreground=RED_1)
+            self.encrypt_logs.delete("1.0", "end-1c")
+            self.encrypt_logs.insert(END, "There is nothing to save yet")
+            return
+        file_data = {
+            "data": self.encrypted_data,
+            "salt": self.salt,
+            "rounds": self.round
+            }
+        path = unique_pickle_path(f'./secrets/secret')
+        with open(path, "wb") as f:
+            pickle.dump(file_data, f)
+        self.encrypt_logs.config(foreground=CYAN_1)
+        self.encrypt_logs.delete("1.0", "end-1c")
+        self.encrypt_logs.insert(END, f"secret saved in {path}")
+        return 
+
     def encrypt_win(self):
         self.main_window.destroy()
         self.encrypt_window = Tk()
@@ -150,7 +177,7 @@ class EncryptUI():
         lbl_output = Text(
                         root,
                         background=BLACK,
-                        foreground=CYAN_1,
+                        foreground=BLUE_1,
                         border=0,
                         width=40,
                           )

@@ -110,7 +110,7 @@ class EncryptUI():
     
     def process_salt_rounds(self) -> None:
         """ process salt_round to collect salt and round """
-        self.salt, self.round = (base64.b64decode(self.salt_round)).decode().split(":")
+        self.salt, self.round = self.salt_round
 
     def process_seed(self):
         self.__output.delete("1.0", "end-1c")
@@ -122,8 +122,8 @@ class EncryptUI():
         self.key, self.salt_round = create_key(password=self.__get_seed)
         self.encrypt_logs.delete("1.0", "end-1c")
         self.encrypt_logs.config(foreground=LIGHT_GREEN_1)
-        self.encrypt_logs.insert(END, f"key: {base64.urlsafe_b64decode(self.key)}\n")
-        self.encrypt_logs.insert(END, f"salt: {base64.urlsafe_b64decode(self.salt_round).decode()}\n")
+        self.encrypt_logs.insert(END, f"key: {self.key}\n")
+        self.encrypt_logs.insert(END, f"salt: {self.salt_round}\n")
         self.process_salt_rounds()
         self.__input_text.config(state=NORMAL, bg=DARK_GREEN_3)
         return

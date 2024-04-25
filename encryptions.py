@@ -17,14 +17,13 @@ def create_key(password: str, iterations=700000):
         iterations=iterations
     )
     key = base64.urlsafe_b64encode(kdf.derive(password))
-    salt_rounds = base64.b64encode((f"{salt}:{iterations}").encode())
-    return key, salt_rounds
+    return key, (salt, iterations)
 
-def recreate_key(password:str, salt:str, round:str):
+def recreate_key(password:str, salt:bytes, round:str):
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,
-        salt=salt.encode(),
+        salt=salt,
         iterations=int(round)
     )
     return base64.urlsafe_b64encode(kdf.derive(password.encode()))

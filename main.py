@@ -1,53 +1,11 @@
-from tkinter import Tk, Entry, Label, Text, END, Button, Toplevel, DISABLED, NORMAL, filedialog
-from encryptions import create_key, encrypt_data, decrypt_data, recreate_key
+from tkinter import Tk, Entry, Label, Text, END, Button, DISABLED, NORMAL, filedialog
 from cryptography.fernet import InvalidToken
-import webbrowser
 import pickle
 import os
-
-BLACK = "black"
-ORANGE_1 = "#c43b00"
-GRAY_1 = "#242423"
-DARK_GREEN_1 = "#000801"
-DARK_GREEN_2 = "#0d5718"
-DARK_GREEN_3 = "#041206"
-LIGHT_GREEN_1 = "#00ff5e"
-RED_1 = "#cc001f"
-BLUE_1 = "#003f52"
-BLUE_2 = "#001e52"
-CYAN_1 = "#00ffc3"
-
-def pop_up(root):
-    win = Toplevel(root)
-    win.geometry("250x150")
-    win.configure(bg=BLACK)
-    message=(
-            "created by parham-mehrabi"
-            "\n\r-----------\n\r"
-            "- you can find the source code at github,"
-            "\n\r- "
-            "create issue if you found a bug or have enhancement ideas"
-            )
-    pop_up_message = Text(
-        win,
-        fg=LIGHT_GREEN_1,
-        bg=BLACK,
-        border=0,
-        wrap="word"
-        )
-    Button(
-        win,
-        text="go to github",
-        background=BLUE_2,
-        fg=ORANGE_1,
-        border=0,
-        command=lambda: webbrowser.open("https://github.com/parham-mehrabi/PENcrypt")
-        ).grid(column=0, row=0, sticky="s")
-    
-    pop_up_message.insert(END, message)
-    win.columnconfigure(0, weight=1)
-    pop_up_message.config(state=DISABLED)
-    pop_up_message.grid(column=0, row=1, sticky="n")  
+from colors import *
+from encryptions import create_key, encrypt_data, decrypt_data, recreate_key
+from costume_widgets import CoolEntry, MenuButton
+from popup import pop_up
 
 def unique_pickle_path(path):
     index = 0
@@ -62,21 +20,6 @@ class CoolLabel(Label):
         kwargs.setdefault('fg', ORANGE_1)
         super().__init__(master=master, **kwargs)
 
-class CoolEntry(Entry):
-        def __init__(self, master=None, **kwargs):
-            kwargs.setdefault('background', DARK_GREEN_1)
-            kwargs.setdefault('fg', LIGHT_GREEN_1)
-            kwargs.setdefault('insertbackground', CYAN_1)
-            super().__init__(master=master, **kwargs)
-
-class MenuButton(Button):
-    def __init__(self, master=None, **kwargs):
-        kwargs.setdefault("background", BLUE_1)
-        kwargs.setdefault("border", 0)
-        kwargs.setdefault("activebackground", CYAN_1)
-        kwargs.setdefault("font", ("Monospace", 15, "bold"))
-        kwargs.setdefault("width", 20)
-        super().__init__(master=master, **kwargs)
 
 class EncryptUI():
     """ UI """
@@ -359,6 +302,6 @@ class EncryptUI():
         root.mainloop()
 
 
-main = EncryptUI()
-
-main.main()
+if __name__ == "__main__":
+    main = EncryptUI()
+    main.main()

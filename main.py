@@ -1,12 +1,13 @@
-from tkinter import Tk, Entry, Label, Text, END, Button, Toplevel, DISABLED, NORMAL
-from encryptions import create_key, encrypt_data, decrypt_data
-import base64
+from tkinter import Tk, Entry, Label, Text, END, Button, Toplevel, DISABLED, NORMAL, filedialog
+from encryptions import create_key, encrypt_data, decrypt_data, recreate_key
+from cryptography.fernet import InvalidToken
 import webbrowser
 import pickle
 import os
 
 BLACK = "black"
 ORANGE_1 = "#c43b00"
+GRAY_1 = "#242423"
 DARK_GREEN_1 = "#000801"
 DARK_GREEN_2 = "#0d5718"
 DARK_GREEN_3 = "#041206"
@@ -82,6 +83,7 @@ class EncryptUI():
     def __init__(self) -> None:
         self.main_window:Tk = None
         self.encrypt_window:Tk = None
+        self.decrypt_window:Tk = None
         self.__seed_entry:Entry= None
         self.__input_text:Text = None
         self.__output:Text = None
@@ -90,7 +92,10 @@ class EncryptUI():
         self.round = None
         self.salt_round = None
         self.encrypted_data = None
-        self.encrypt_logs = None
+        self.encrypt_logs:Text = None
+        self.decrypt_logs:Text = None
+        self.encrypted_file_path:str = None
+        self.unlocked_data = None
 
     @property
     def screen_size(self):
@@ -99,7 +104,7 @@ class EncryptUI():
     @property
     def __get_seed(self):
         return self.__seed_entry.get() if self.__seed_entry else ""
-    
+
     def input_on_change(self, _event):
         if self.key:
             self.encrypted_data = encrypt_data(key=self.key, raw_data=self.__input_text.get("1.0", "end-1c"))
@@ -205,6 +210,138 @@ class EncryptUI():
         self.encrypt_logs = logs
         self.__input_text = txt_input
         self.__output = lbl_output
+    def decrypt_file(self):
+        if not self.encrypted_file_path:
+            self.decrypt_logs.config(fg=RED_1)
+            self.decrypt_logs.delete("1.0", "end-1c")
+            self.decrypt_logs.insert(END, "choose the file first\n")
+            return
+        with open(self.encrypted_file_path, "rb") as f:
+            try:
+                file = pickle.load(f)
+            except Exception as e:
+                print(e)
+                self.decrypt_logs.config(fg=RED_1)
+                self.decrypt_logs.delete("1.0", "end-1c")
+                self.decrypt_logs.insert(END, "FILE IS BROKEN (bad pickle)\n")
+                return
+        password = self.__get_seed
+        if not password:
+            self.decrypt_logs.config(fg=RED_1)
+            self.decrypt_logs.delete("1.0", "end-1c")
+            self.decrypt_logs.insert(END, "empty password\n")
+            return
+        salt = file["salt"]
+        rounds = file["rounds"]
+        data  = file["data"]
+        if not salt or not rounds or not data:
+            self.decrypt_logs.config(fg=RED_1)
+            self.decrypt_logs.delete("1.0", "end-1c")
+            self.decrypt_logs.insert(END, "FILE IS BROKEN (salt, token or data is missing)\n")
+            return
+        key = recreate_key(password=password, salt=salt, round=rounds)
+        try:
+            self.unlocked_data = decrypt_data(key=key, encrypted_data=data).decode()
+            self.decrypt_logs.config(fg=LIGHT_GREEN_1)
+            self.decrypt_logs.delete("1.0", "end-1c")
+            self.decrypt_logs.insert(END, "File decrypted successfully.\n")
+        except InvalidToken:
+            self.decrypt_logs.config(fg=RED_1)
+            self.decrypt_logs.delete("1.0", "end-1c")
+            self.decrypt_logs.insert(END, f"Wrong Password ({password})\n")
+            self.decrypt_logs.insert(END, f"key created with given password is \"{key}\" which does NOT match the file \n")
+
+
+    def get_file(self):
+        path = filedialog.askopenfilename(filetypes=[("Locked Files", "*.pickle")])
+        if not os.path.exists(path):
+            self.decrypt_logs.config(fg=RED_1)
+            self.decrypt_logs.delete("1.0", "end-1c")
+            self.decrypt_logs.insert(END, "File Not Found. \n")
+            return 
+        self.encrypted_file_path = path
+        self.decrypt_logs.config(fg=LIGHT_GREEN_1)
+        self.decrypt_logs.delete("1.0", "end-1c")
+        self.decrypt_logs.insert(END, "Success.\n")
+        self.decrypt_logs.insert(END, f"File: {path}\n")
+    
+    def save_to_file(self):
+        if not self.unlocked_data:
+            self.decrypt_logs.config(fg=RED_1)
+            self.decrypt_logs.delete("1.0", "end-1c")
+            self.decrypt_logs.insert(END, "Nothing unlocked to save yet.\n")
+            self.decrypt_logs.insert(END, "Decrypt your data first.\n")
+            return
+        path = filedialog.asksaveasfilename(
+                    initialfile="unlocked",
+                    defaultextension="PENcrypt.txt",
+                    title="choose where to save unlocked file"
+          )
+        with open(path, "w") as f:
+            f.write(self.unlocked_data)
+        self.decrypt_logs.config(fg=LIGHT_GREEN_1)
+        self.decrypt_logs.delete("1.0", "end-1c")
+        self.decrypt_logs.insert(END, "Success.\n")
+        self.decrypt_logs.insert(END, f"saved in {path}\n")
+    def decrypt_win(self):
+        root = Tk()
+        self.decrypt_window = root
+        self.main_window.destroy()
+        root.title("PENcrypt")
+        root.geometry("330x300+300+100")
+        root.config(bg=BLACK)
+        
+        CoolLabel(master=root, text="Decrypt file").grid(column=0, row=0, columnspan=3, sticky="ew")
+
+        lbl_seed = CoolLabel(root, text="Enter your password", font=("Monospace", 12), fg=LIGHT_GREEN_1)
+        ent_seed = CoolEntry(root)
+        btn_choose_file = Button(
+            root,
+            border=0,
+            fg=CYAN_1,
+            background=GRAY_1,
+            text="Choose file",
+            activebackground=BLACK,
+            activeforeground=RED_1,
+            command=self.get_file
+        )
+        btn_decrypt = Button(
+            root,
+            border=0,
+            fg=CYAN_1,
+            background=GRAY_1,
+            text="Unlock",
+            activebackground=BLACK,
+            activeforeground=RED_1,
+            command=self.decrypt_file
+        )
+        btn_save_file = Button(
+            root,
+            border=0,
+            fg=CYAN_1,
+            background=GRAY_1,
+            text="Save",
+            activebackground=BLACK,
+            activeforeground=RED_1,
+            command=self.save_to_file
+        )
+        self.decrypt_logs = Text(
+                        root,
+                        background=BLACK,
+                        foreground=BLUE_1,
+                        border=0,
+                        width=40,
+                          )
+        lbl_seed.grid(column=0, row=1)
+        ent_seed.grid(column=1, row=1, columnspan=2)
+        btn_choose_file.grid(column=0, row=3, columnspan=3, pady=20, ipady=10, ipadx=10)
+        btn_decrypt.grid(column=0,columnspan=2, row=4, ipady=10, ipadx=10, sticky="ew")
+        btn_save_file.grid(column=1,columnspan=2, row=4, ipady=10, ipadx=10, sticky="e")
+        self.decrypt_logs.grid(column=0, columnspan=3, row=5)
+        self.__seed_entry = ent_seed
+
+
+
 
     def main(self):
         self.main_window = Tk()
@@ -214,11 +351,14 @@ class EncryptUI():
         root.configure(bg=BLACK)
         CoolLabel(root, text="PENcrypt", fg=CYAN_1, font=("Arial", 20, "bold")).grid(column=0, row=0)
         MenuButton(root, text="Encrypt", command=self.encrypt_win).grid(column=0, row=1, padx=10, pady=5)
-        MenuButton(root, text="Decrypt").grid(column=0, row=2, padx=10, pady=5)
+        MenuButton(root, text="Decrypt", command=self.decrypt_win).grid(column=0, row=2, padx=10, pady=5)
         MenuButton(root, text="Source Code", command=lambda: pop_up(root=root)).grid(column=0, row=3, padx=10, pady=5)
         MenuButton(root, text="Exit", command=root.destroy).grid(column=0, row=4, padx=10, pady=5)
         
         root.columnconfigure(0, weight=1)
         root.mainloop()
+
+
 main = EncryptUI()
+
 main.main()

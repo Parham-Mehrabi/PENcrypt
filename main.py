@@ -1,24 +1,12 @@
-from tkinter import Tk, Entry, Label, Text, END, Button, DISABLED, NORMAL, filedialog
+from tkinter import Tk, Entry, Text, END, Button, DISABLED, NORMAL, filedialog
 from cryptography.fernet import InvalidToken
 import pickle
 import os
 from colors import *
 from encryptions import create_key, encrypt_data, decrypt_data, recreate_key
-from costume_widgets import CoolEntry, MenuButton
+from costume_widgets import CoolEntry, MenuButton, CoolLabel
 from popup import pop_up
-
-def unique_pickle_path(path):
-    index = 0
-    while os.path.exists(f"{path}-{index}.pickle"):
-        index += 1
-    return f"{path}-{index}.pickle"
-
-class CoolLabel(Label):
-    def __init__(self, master=None, **kwargs):
-        kwargs.setdefault('font', ("Monospace", 20))
-        kwargs.setdefault('background', BLACK)
-        kwargs.setdefault('fg', ORANGE_1)
-        super().__init__(master=master, **kwargs)
+from utils import unique_pickle_path
 
 
 class EncryptUI():
